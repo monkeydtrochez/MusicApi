@@ -19,11 +19,11 @@ You can also take this example request calls that swagger provides and call the 
 
 
 ### TODOS ###
-Create new repo on github and push. - Check
-Add paralell request calls on the cover art part. - Check
-Add usage of cancelation tokens.
-Add better loggin. (Application insight?)
-Add more testing.
-Deploy to Azure.
-Add a Azure function that does something with the response and deploy the Azure function.
+* Create new repo on github and push. - Check
+* Add paralell request calls on the cover art part. - Check
+* Add usage of cancelation tokens.
+* Add better loggin. (Application insight?)
+* Add more testing.
+* Deploy to Azure.
+* Add a Azure function that does something with the response and deploy the Azure function.
 
