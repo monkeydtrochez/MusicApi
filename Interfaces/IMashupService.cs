@@ -1,10 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Mashup.Api.Models;
 
 namespace Mashup.Api.Interfaces
 {
     public interface IMashupService
     {
-        Task<MashupResultModel> BuildMashupModel(string mdId, string langCode);
+        Task<MashupResultModel> BuildMashupModel(string mdId, string langCode, CancellationToken cancellationToken);
     }
 }

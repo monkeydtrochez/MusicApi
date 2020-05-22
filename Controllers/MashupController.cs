@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Mashup.Api.Interfaces;
 using Mashup.Api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +18,17 @@ namespace Mashup.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ObjectResult> Get([FromQuery]RequestModel model)
+        public async Task<ObjectResult> Get([FromQuery]RequestModel model, CancellationToken cancellationToken)
         {
-            var resultModel = await _mashupService.BuildMashupModel(model.MbId, model.LangCode);
+            MashupResultModel resultModel;
+            try
+            {
+                resultModel = await _mashupService.BuildMashupModel(model.MbId, model.LangCode, cancellationToken);
+            }
+            catch (TaskCanceledException taskCanceledException) when (taskCanceledException.CancellationToken == cancellationToken)
+            {
+                return BadRequest("The request has been cancelled.");
+            }
 
             return Ok(resultModel);
         }

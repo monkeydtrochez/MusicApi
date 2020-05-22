@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using System.Web;
@@ -28,18 +29,20 @@ namespace Mashup.Api.Services
             _configuration = configuration;
         }
 
-        public async Task<MashupResultModel> BuildMashupModel(string mbId, string langCode)
+        public async Task<MashupResultModel> BuildMashupModel(string mbId, string langCode, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (string.IsNullOrEmpty(mbId)) throw new ArgumentNullException(nameof(mbId), "MbId cannot be null or empty.");
 
             var result = new MashupResultModel();
 
             try
             {
-                var musicBrainzData = await GetMusicBrainzData(mbId);
-                var albums = await GetAlbumsWithCover(musicBrainzData.ReleaseGroups, mbId);
-                var wikiData = await GetWikiData(musicBrainzData);
-                var wikipediaData = await GetWikipediaData(wikiData, mbId, langCode);
+                var musicBrainzData = await GetMusicBrainzData(mbId, cancellationToken);
+                var albums = await GetAlbumsWithCover(musicBrainzData.ReleaseGroups, mbId, cancellationToken);
+                var wikiData = await GetWikiData(musicBrainzData, cancellationToken);
+                var wikipediaData = await GetWikipediaData(wikiData, mbId, langCode, cancellationToken);
 
                 result.Name = musicBrainzData.Name;
                 result.MbId = musicBrainzData.Id;
@@ -61,8 +64,10 @@ namespace Mashup.Api.Services
             return result;
         }
 
-        public async Task<MusicBrainsJsonModel> GetMusicBrainzData(string mbId)
+        public async Task<MusicBrainsJsonModel> GetMusicBrainzData(string mbId, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (string.IsNullOrEmpty(mbId))
                 throw new ArgumentNullException(nameof(mbId));
 
@@ -77,7 +82,7 @@ namespace Mashup.Api.Services
                     Timeout = -1
                 };
 
-                var response = await client.ExecuteGetAsync<MusicBrainsJsonModel>(new RestRequest(Method.GET));
+                var response = await client.ExecuteGetAsync<MusicBrainsJsonModel>(new RestRequest(Method.GET), cancellationToken);
 
                 if (response.Data != null)
                 {
@@ -95,8 +100,10 @@ namespace Mashup.Api.Services
             return null;
         }
 
-        public async Task<List<SiteLink>> GetWikiData(MusicBrainsJsonModel model)
+        public async Task<List<SiteLink>> GetWikiData(MusicBrainsJsonModel model, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (model == null)
                 throw new ArgumentNullException(nameof(model), "Model cannot be null.");
 
@@ -117,7 +124,7 @@ namespace Mashup.Api.Services
                     Timeout = -1
                 };
 
-                var response = await client.ExecuteGetAsync(new RestRequest(Method.GET));
+                var response = await client.ExecuteGetAsync(new RestRequest(Method.GET), cancellationToken);
 
                 var parsedResponse = JObject.Parse(response.Content);
 
@@ -142,8 +149,10 @@ namespace Mashup.Api.Services
             return null;
         }
 
-        public async Task<WikipediaJsonModel> GetWikipediaData(IReadOnlyCollection<SiteLink> siteLinks, string mbId, string lanCode)
+        public async Task<WikipediaJsonModel> GetWikipediaData(IReadOnlyCollection<SiteLink> siteLinks, string mbId, string lanCode, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var cachedWikipediaData = _cacheHelper.GetFromCache<WikipediaJsonModel>($"Wikipedia_{mbId}_{lanCode}");
             if (cachedWikipediaData != null) return cachedWikipediaData;
 
@@ -163,7 +172,7 @@ namespace Mashup.Api.Services
                     Timeout = -1
                 };
 
-                var response = await client.ExecuteGetAsync(new RestRequest(Method.GET));
+                var response = await client.ExecuteGetAsync(new RestRequest(Method.GET), cancellationToken);
 
                 var parsedResponse = JObject.Parse(response.Content);
 
@@ -187,8 +196,10 @@ namespace Mashup.Api.Services
             return null;
         }
 
-        public async Task<IEnumerable<ReleaseGroup>> GetAlbumsWithCover(IReadOnlyCollection<ReleaseGroup> releaseGroups, string mbId)
+        public async Task<IEnumerable<ReleaseGroup>> GetAlbumsWithCover(IReadOnlyCollection<ReleaseGroup> releaseGroups, string mbId, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (releaseGroups == null || !releaseGroups.Any())
                 throw new ArgumentNullException(nameof(releaseGroups));
 
@@ -206,7 +217,7 @@ namespace Mashup.Api.Services
                     Timeout = -1
                 };
 
-                var requests = albums.Select(album => RequestForCoverAsync(album, client)).ToArray();
+                var requests = albums.Select(album => RequestForCoverAsync(album, client, cancellationToken)).ToArray();
                 var responseResults = await Task.WhenAll(requests);
 
                 foreach (var responseResult in responseResults.Where(x => x.Data != null))
@@ -228,11 +239,12 @@ namespace Mashup.Api.Services
         }
 
 
-        private static async Task<IRestResponse<CoverImages>> RequestForCoverAsync(ReleaseGroup album, IRestClient client)
+        private static async Task<IRestResponse<CoverImages>> RequestForCoverAsync(ReleaseGroup album, IRestClient client, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
 
             var request = new RestRequest(album.Id, Method.GET);
-            var response = await client.ExecuteAsync<CoverImages>(request);
+            var response = await client.ExecuteAsync<CoverImages>(request, cancellationToken);
 
             if (response.Data != null)
             {

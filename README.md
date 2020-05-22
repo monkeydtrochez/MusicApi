@@ -1,6 +1,6 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+In this project i am simply playing around a little with building a web api using .net core.
 
 
 ### How do I get set up? ###
@@ -21,7 +21,7 @@ You can also take this example request calls that swagger provides and call the 
 ### TODOS ###
 * Create new repo on github and push. - Check
 * Add paralell request calls on the cover art part. - Check
-* Add usage of cancelation tokens.
+* Add usage of cancellation tokens - Check
 * Add better loggin. (Application insight?)
 * Add more testing.
 * Deploy to Azure.
